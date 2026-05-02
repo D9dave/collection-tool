@@ -15,19 +15,35 @@ def normalize(name):
     name = re.sub(r"\b[a-z]\b","",name)
     return " ".join(name.split())
 
-def extract_balances(pdf):
+def extract_balances(file):
     balances = {}
-    with pdfplumber.open(pdf) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text: continue
-            for line in text.split("\n"):
-                match = re.match(r"([A-Z\-', ]+)\s+\$?(-?\d+\.\d+)", line)
-                if match:
-                    name = normalize(match.group(1))
-                    bal = float(match.group(2))
-                    if bal > 0:
-                        balances[name] = bal
+
+    try:
+        with pdfplumber.open(file) as pdf:
+            for page in pdf.pages:
+                try:
+                    text = page.extract_text()
+                except:
+                    continue
+
+                if not text:
+                    continue
+
+                lines = text.split("\n")
+
+                for line in lines:
+                    match = re.match(r"([A-Z\-', ]+)\s+\$?(-?\d+\.\d+)", line)
+                    if match:
+                        name = normalize(match.group(1))
+                        bal = float(match.group(2))
+
+                        if bal > 0:
+                            balances[name] = bal
+
+    except Exception as e:
+        st.error("Error reading balance PDF. Try re-uploading.")
+        return {}
+
     return balances
 
 def extract_schedule(pdf):
