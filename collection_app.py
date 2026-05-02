@@ -56,12 +56,25 @@ def extract_schedule(file):
                 if not text:
                     continue
 
-                # Find patterns like: NAME NAME MM/DD/YYYY
-                matches = re.findall(r"([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+\d{1,2}/\d{1,2}/\d{4}", text)
+                lines = text.split("\n")
 
-                for first, last in matches:
-                    name = f"{first} {last}"
-                    names.append(normalize(name))
+                for line in lines:
+                    parts = line.split()
+
+                    # We need at least 6+ parts to safely grab patient name
+                    if len(parts) > 5:
+                        try:
+                            # Skip lines that aren't appointment rows
+                            if parts[0] == "JENNIFER" and parts[1] == "JONES":
+                                # Patient name starts after Status column
+                                # Format: Provider Time Status NAME NAME
+                                name_parts = parts[4:6]  # grab first + last name
+
+                                name = " ".join(name_parts)
+                                names.append(normalize(name))
+
+                        except:
+                            continue
 
     except:
         st.error("Error reading schedule PDF.")
