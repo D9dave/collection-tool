@@ -59,17 +59,13 @@ def extract_schedule(file):
                 lines = text.split("\n")
 
                 for line in lines:
-                    # Look for lines that contain a date of birth (your schedule format)
-                    if "/" in line:
-                        parts = line.split()
+                    line = line.strip()
 
-                        # Try to grab name before DOB
-                        try:
-                            name_parts = parts[:2]
-                            name = " ".join(name_parts)
-                            names.append(normalize(name))
-                        except:
-                            continue
+                    # Look for lines that are ALL CAPS (patient names)
+                    if line.isupper() and len(line.split()) >= 2:
+                        # remove extra stuff like DOB or phone numbers
+                        name = " ".join(line.split()[:2])
+                        names.append(normalize(name))
 
     except:
         st.error("Error reading schedule PDF.")
