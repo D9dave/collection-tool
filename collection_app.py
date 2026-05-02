@@ -59,21 +59,15 @@ def extract_schedule(file):
                 lines = text.split("\n")
 
                 for line in lines:
-                    parts = line.split()
+                    line = line.strip()
 
-                    # Look for lines that contain a phone number (reliable anchor)
-                    if "(" in line and ")" in line and len(parts) > 5:
-                        try:
-                            # Patient name is usually BEFORE the DOB
-                            # So grab words before the date (MM/DD/YYYY)
-                            for i, part in enumerate(parts):
-                                if "/" in part:  # this is DOB
-                                    name_parts = parts[i-2:i]
-                                    name = " ".join(name_parts)
-                                    names.append(normalize(name))
-                                    break
-                        except:
-                            continue
+                    # Look for real names: words in ALL CAPS (2+ words)
+                    words = line.split()
+
+                    if len(words) >= 2:
+                        if all(w.isupper() for w in words[:2]):
+                            name = words[0] + " " + words[1]
+                            names.append(normalize(name))
 
     except:
         st.error("Error reading schedule PDF.")
