@@ -80,7 +80,8 @@ if st.button("Generate Report"):
     if schedule_file and balance_file:
         balances = extract_balances(balance_file)
         schedule = extract_schedule(schedule_file)
-
+st.write("Sample Schedule Names:", schedule[:10])
+st.write("Sample Balance Names:", list(balances.keys())[:10])
         results = []
         for name in schedule:
             if name in balances:
