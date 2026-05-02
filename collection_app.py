@@ -9,7 +9,7 @@ balance_file = st.file_uploader("Upload Balance PDF")
 
 
 # -----------------------------
-# Normalize names (KEY FIX)
+# Normalize names
 # -----------------------------
 def normalize(name):
     name = name.lower().strip()
@@ -21,7 +21,7 @@ def normalize(name):
 
     parts = name.split()
 
-    # keep ONLY first + last name
+    # keep only first + last
     if len(parts) >= 2:
         name = parts[0] + " " + parts[-1]
 
@@ -29,7 +29,7 @@ def normalize(name):
 
 
 # -----------------------------
-# Extract BALANCES (source of truth)
+# Extract BALANCES
 # -----------------------------
 def extract_balances(file):
     balances = {}
@@ -41,9 +41,7 @@ def extract_balances(file):
                 if not text:
                     continue
 
-                lines = text.split("\n")
-
-                for line in lines:
+                for line in text.split("\n"):
                     match = re.match(r"([A-Z\-', ]+)\s+\$?(-?\d+\.\d+)", line)
                     if match:
                         name = normalize(match.group(1))
@@ -60,7 +58,7 @@ def extract_balances(file):
 
 
 # -----------------------------
-# Extract SCHEDULE (FINAL VERSION)
+# Extract SCHEDULE (FINAL FIXED)
 # -----------------------------
 def extract_schedule(file):
     names = []
@@ -80,12 +78,18 @@ def extract_schedule(file):
                     for i, word in enumerate(parts):
                         if word.lower() in ["confirmed", "scheduled", "cancelled", "rescheduled", "roomed"]:
                             try:
-                                # grab up to 3 words after status
+                                # grab next 3 parts after status
                                 name_parts = parts[i+1:i+4]
 
-                                if len(name_parts) >= 2:
-                                    # keep first + last only
-                                    name = name_parts[0] + " " + name_parts[-1]
+                                # remove phone numbers / parentheses
+                                clean_parts = [
+                                    p for p in name_parts
+                                    if "(" not in p and ")" not in p
+                                ]
+
+                                # must have at least first + last
+                                if len(clean_parts) >= 2:
+                                    name = clean_parts[0] + " " + clean_parts[-1]
                                     names.append(normalize(name))
 
                             except:
@@ -107,7 +111,7 @@ if st.button("Generate Report"):
         balances = extract_balances(balance_file)
         schedule = extract_schedule(schedule_file)
 
-        # DEBUG (optional — remove later if you want)
+        # Debug preview (you can remove later)
         st.write("Sample Schedule Names:", schedule[:10])
         st.write("Sample Balance Names:", list(balances.keys())[:10])
 
@@ -117,7 +121,6 @@ if st.button("Generate Report"):
             if name in balances:
                 results.append((name.title(), balances[name]))
 
-        # sort highest balance first
         results = sorted(results, key=lambda x: x[1], reverse=True)
 
         st.subheader("Patients to Collect From")
