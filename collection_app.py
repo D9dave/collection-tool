@@ -46,19 +46,36 @@ def extract_balances(file):
 
     return balances
 
-def extract_schedule(pdf):
+def extract_schedule(file):
     names = []
-    with pdfplumber.open(pdf) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text: continue
-            for line in text.split("\n"):
-                parts = line.split()
-                if len(parts) > 2:
-                    name = " ".join(parts[-2:])
-                    names.append(normalize(name))
-    return names
 
+    try:
+        with pdfplumber.open(file) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if not text:
+                    continue
+
+                lines = text.split("\n")
+
+                for line in lines:
+                    # Look for lines that contain a date of birth (your schedule format)
+                    if "/" in line:
+                        parts = line.split()
+
+                        # Try to grab name before DOB
+                        try:
+                            name_parts = parts[:2]
+                            name = " ".join(name_parts)
+                            names.append(normalize(name))
+                        except:
+                            continue
+
+    except:
+        st.error("Error reading schedule PDF.")
+        return []
+
+    return names
 if st.button("Generate Report"):
     if schedule_file and balance_file:
         balances = extract_balances(balance_file)
