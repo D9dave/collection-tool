@@ -56,18 +56,12 @@ def extract_schedule(file):
                 if not text:
                     continue
 
-                lines = text.split("\n")
+                # Find patterns like: NAME NAME MM/DD/YYYY
+                matches = re.findall(r"([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+\d{1,2}/\d{1,2}/\d{4}", text)
 
-                for line in lines:
-                    line = line.strip()
-
-                    # Look for real names: words in ALL CAPS (2+ words)
-                    words = line.split()
-
-                    if len(words) >= 2:
-                        if all(w.isupper() for w in words[:2]):
-                            name = words[0] + " " + words[1]
-                            names.append(normalize(name))
+                for first, last in matches:
+                    name = f"{first} {last}"
+                    names.append(normalize(name))
 
     except:
         st.error("Error reading schedule PDF.")
