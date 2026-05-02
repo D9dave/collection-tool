@@ -9,7 +9,7 @@ balance_file = st.file_uploader("Upload Balance PDF")
 
 
 # -----------------------------
-# Normalize names (VERY IMPORTANT)
+# Normalize names (KEY FIX)
 # -----------------------------
 def normalize(name):
     name = name.lower().strip()
@@ -19,10 +19,13 @@ def normalize(name):
         last, first = name.split(",", 1)
         name = first.strip() + " " + last.strip()
 
-    # remove middle initials (single letters)
-    name = re.sub(r"\b[a-z]\b", "", name)
+    parts = name.split()
 
-    return " ".join(name.split())
+    # keep ONLY first + last name
+    if len(parts) >= 2:
+        name = parts[0] + " " + parts[-1]
+
+    return name
 
 
 # -----------------------------
@@ -57,7 +60,7 @@ def extract_balances(file):
 
 
 # -----------------------------
-# Extract SCHEDULE (FINAL WORKING LOGIC)
+# Extract SCHEDULE (FINAL VERSION)
 # -----------------------------
 def extract_schedule(file):
     names = []
@@ -77,11 +80,13 @@ def extract_schedule(file):
                     for i, word in enumerate(parts):
                         if word.lower() in ["confirmed", "scheduled", "cancelled", "rescheduled", "roomed"]:
                             try:
-                                # grab FIRST + LAST after status
-                                name_parts = parts[i+1:i+3]
+                                # grab up to 3 words after status
+                                name_parts = parts[i+1:i+4]
 
-                                name = " ".join(name_parts)
-                                names.append(normalize(name))
+                                if len(name_parts) >= 2:
+                                    # keep first + last only
+                                    name = name_parts[0] + " " + name_parts[-1]
+                                    names.append(normalize(name))
 
                             except:
                                 continue
@@ -102,7 +107,7 @@ if st.button("Generate Report"):
         balances = extract_balances(balance_file)
         schedule = extract_schedule(schedule_file)
 
-        # DEBUG (you can remove later)
+        # DEBUG (optional — remove later if you want)
         st.write("Sample Schedule Names:", schedule[:10])
         st.write("Sample Balance Names:", list(balances.keys())[:10])
 
