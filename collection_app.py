@@ -7,25 +7,34 @@ st.title("Daily Collection Tool")
 schedule_file = st.file_uploader("Upload Schedule PDF")
 balance_file = st.file_uploader("Upload Balance PDF")
 
+
+# -----------------------------
+# Normalize names (VERY IMPORTANT)
+# -----------------------------
 def normalize(name):
     name = name.lower().strip()
+
+    # convert LAST, FIRST → FIRST LAST
     if "," in name:
-        last, first = name.split(",",1)
+        last, first = name.split(",", 1)
         name = first.strip() + " " + last.strip()
-    name = re.sub(r"\b[a-z]\b","",name)
+
+    # remove middle initials (single letters)
+    name = re.sub(r"\b[a-z]\b", "", name)
+
     return " ".join(name.split())
 
+
+# -----------------------------
+# Extract BALANCES (source of truth)
+# -----------------------------
 def extract_balances(file):
     balances = {}
 
     try:
         with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
-                try:
-                    text = page.extract_text()
-                except:
-                    continue
-
+                text = page.extract_text()
                 if not text:
                     continue
 
@@ -40,12 +49,16 @@ def extract_balances(file):
                         if bal > 0:
                             balances[name] = bal
 
-    except Exception as e:
-        st.error("Error reading balance PDF. Try re-uploading.")
+    except:
+        st.error("Error reading balance PDF.")
         return {}
 
     return balances
 
+
+# -----------------------------
+# Extract SCHEDULE (FINAL WORKING LOGIC)
+# -----------------------------
 def extract_schedule(file):
     names = []
 
@@ -61,41 +74,51 @@ def extract_schedule(file):
                 for line in lines:
                     parts = line.split()
 
-                    # We need at least 6+ parts to safely grab patient name
-                    if len(parts) > 5:
-                        try:
-                            # Skip lines that aren't appointment rows
-                            if parts[0] == "JENNIFER" and parts[1] == "JONES":
-                                # Patient name starts after Status column
-                                # Format: Provider Time Status NAME NAME
-                                name_parts = parts[4:6]  # grab first + last name
+                    for i, word in enumerate(parts):
+                        if word.lower() in ["confirmed", "scheduled", "cancelled", "rescheduled", "roomed"]:
+                            try:
+                                # grab FIRST + LAST after status
+                                name_parts = parts[i+1:i+3]
 
                                 name = " ".join(name_parts)
                                 names.append(normalize(name))
 
-                        except:
-                            continue
+                            except:
+                                continue
 
     except:
         st.error("Error reading schedule PDF.")
         return []
 
     return names
+
+
+# -----------------------------
+# MAIN BUTTON
+# -----------------------------
 if st.button("Generate Report"):
     if schedule_file and balance_file:
+
         balances = extract_balances(balance_file)
         schedule = extract_schedule(schedule_file)
 
+        # DEBUG (you can remove later)
         st.write("Sample Schedule Names:", schedule[:10])
         st.write("Sample Balance Names:", list(balances.keys())[:10])
 
         results = []
+
         for name in schedule:
             if name in balances:
                 results.append((name.title(), balances[name]))
 
+        # sort highest balance first
         results = sorted(results, key=lambda x: x[1], reverse=True)
 
         st.subheader("Patients to Collect From")
-        for r in results:
-            st.write(f"{r[0]} — ${r[1]:.2f}")
+
+        if results:
+            for r in results:
+                st.write(f"{r[0]} — ${r[1]:.2f}")
+        else:
+            st.write("No matches found")
