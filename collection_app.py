@@ -1,6 +1,7 @@
 import streamlit as st
 import pdfplumber
 import re
+import streamlit.components.v1 as components
 
 st.title("Daily Collection Tool")
 
@@ -58,7 +59,7 @@ def extract_balances(file):
 
 
 # -----------------------------
-# Extract SCHEDULE (FINAL FIXED)
+# Extract SCHEDULE
 # -----------------------------
 def extract_schedule(file):
     names = []
@@ -78,7 +79,6 @@ def extract_schedule(file):
                     for i, word in enumerate(parts):
                         if word.lower() in ["confirmed", "scheduled", "cancelled", "rescheduled", "roomed"]:
                             try:
-                                # grab next 3 parts after status
                                 name_parts = parts[i+1:i+4]
 
                                 # remove phone numbers / parentheses
@@ -87,7 +87,6 @@ def extract_schedule(file):
                                     if "(" not in p and ")" not in p
                                 ]
 
-                                # must have at least first + last
                                 if len(clean_parts) >= 2:
                                     name = clean_parts[0] + " " + clean_parts[-1]
                                     names.append(normalize(name))
@@ -111,16 +110,13 @@ if st.button("Generate Report"):
         balances = extract_balances(balance_file)
         schedule = extract_schedule(schedule_file)
 
-        # Debug preview (you can remove later)
-        st.write("Sample Schedule Names:", schedule[:10])
-        st.write("Sample Balance Names:", list(balances.keys())[:10])
-
         results = []
 
         for name in schedule:
             if name in balances:
                 results.append((name.title(), balances[name]))
 
+        # sort highest balance first
         results = sorted(results, key=lambda x: x[1], reverse=True)
 
         st.subheader("Patients to Collect From")
@@ -128,5 +124,34 @@ if st.button("Generate Report"):
         if results:
             for r in results:
                 st.write(f"{r[0]} — ${r[1]:.2f}")
+
+            # -----------------------------
+            # PRINTABLE VERSION
+            # -----------------------------
+            report_html = "<h2>Daily Collection List</h2><hr>"
+
+            for r in results:
+                report_html += f"<p>{r[0]} — ${r[1]:.2f}</p>"
+
+            report_html += """
+            <script>
+            function printReport() {
+                var w = window.open('', '', 'height=600,width=800');
+                w.document.write('<html><head><title>Print</title></head><body>');
+                w.document.write(document.getElementById("report").innerHTML);
+                w.document.write('</body></html>');
+                w.document.close();
+                w.print();
+            }
+            </script>
+            """
+
+            components.html(f"""
+                <div id="report">
+                    {report_html}
+                </div>
+                <button onclick="printReport()">🖨️ Print Report</button>
+            """, height=600)
+
         else:
             st.write("No matches found")
