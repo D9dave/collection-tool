@@ -126,32 +126,24 @@ if st.button("Generate Report"):
                 st.write(f"{r[0]} — ${r[1]:.2f}")
 
             # -----------------------------
-            # PRINTABLE VERSION
+            # PRINT BUTTON (FIXED VERSION)
             # -----------------------------
-            report_html = "<h2>Daily Collection List</h2><hr>"
+            if st.button("🖨️ Print Report"):
+                html = "<h2>Daily Collection List</h2><hr>"
 
-            for r in results:
-                report_html += f"<p>{r[0]} — ${r[1]:.2f}</p>"
+                for r in results:
+                    html += f"<p>{r[0]} — ${r[1]:.2f}</p>"
 
-            report_html += """
-            <script>
-            function printReport() {
+                components.html(f"""
+                <script>
                 var w = window.open('', '', 'height=600,width=800');
                 w.document.write('<html><head><title>Print</title></head><body>');
-                w.document.write(document.getElementById("report").innerHTML);
+                w.document.write(`{html}`);
                 w.document.write('</body></html>');
                 w.document.close();
                 w.print();
-            }
-            </script>
-            """
-
-            components.html(f"""
-                <div id="report">
-                    {report_html}
-                </div>
-                <button onclick="printReport()">🖨️ Print Report</button>
-            """, height=600)
+                </script>
+                """, height=0)
 
         else:
             st.write("No matches found")
