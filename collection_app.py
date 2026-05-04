@@ -1,7 +1,6 @@
 import streamlit as st
 import pdfplumber
 import re
-import streamlit.components.v1 as components
 
 st.title("Daily Collection Tool")
 
@@ -126,24 +125,30 @@ if st.button("Generate Report"):
                 st.write(f"{r[0]} — ${r[1]:.2f}")
 
             # -----------------------------
-            # PRINT BUTTON (FIXED VERSION)
+            # PRINT BUTTON (STABLE VERSION)
             # -----------------------------
-            if st.button("🖨️ Print Report"):
-                html = "<h2>Daily Collection List</h2><hr>"
+            html = "<h2>Daily Collection List</h2><hr>"
 
-                for r in results:
-                    html += f"<p>{r[0]} — ${r[1]:.2f}</p>"
+            for r in results:
+                html += f"<p>{r[0]} — ${r[1]:.2f}</p>"
 
-                components.html(f"""
-                <script>
-                var w = window.open('', '', 'height=600,width=800');
-                w.document.write('<html><head><title>Print</title></head><body>');
-                w.document.write(`{html}`);
-                w.document.write('</body></html>');
-                w.document.close();
-                w.print();
-                </script>
-                """, height=0)
+            print_html = f"""
+            <html>
+            <head>
+            <title>Print</title>
+            </head>
+            <body onload="window.print()">
+            {html}
+            </body>
+            </html>
+            """
+
+            st.download_button(
+                label="🖨️ Print Report",
+                data=print_html,
+                file_name="collection_report.html",
+                mime="text/html"
+            )
 
         else:
             st.write("No matches found")
